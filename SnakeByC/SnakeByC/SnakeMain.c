@@ -3,41 +3,6 @@
 #include <windows.h>
 #include <stdlib.h>
 
-// 定义屏幕大小
-#define LEN		20
-
-// 定义空白字符
-#define BLANK	' '
-// 定义蛇的图案
-#define SNAKE	'o'
-// 定义食物的图案
-#define FOOD	'@'
-
-// 定义蛇的初始大小
-#define INITLEN	5
-
-// 定义上下左右的操作键
-#define UP		'w'
-#define DOWN	's'
-#define LEFT	'a'
-#define RIGHT	'd'
-
-
-// 静态变量
-char screen[LEN][LEN];					// 屏幕
-
-// 函数定义
-void InitScreen();
-void SnakeGame();
-
-void InitSnake(struct GameData *);
-void NextHead(struct GameData*);
-void PrintScreen(struct GameData*);
-void SnakeWalk(struct GameData*);
-
-Food GenFood();
-
-
 
 void main(void) {
 
@@ -52,41 +17,39 @@ void main(void) {
 	功能：贪吃蛇游戏入口
 -----------------------------*/
 void SnakeGame() {
-	// 游戏变量
-	struct GameData gameData;				// 游戏数据
 
 	// 初始化贪吃蛇
-	InitSnake(&gameData);
+	InitSnake();
 
 	// 初始化屏幕
 	InitScreen();
 
 	// 打印屏幕
-	PrintScreen(&gameData);
+	PrintScreen();
 
 	// 游戏正式开始
-	while (gameData.gameContinue) {
+	while (snakeGameData.gameContinue) {
 
 		// 更新方向
-		gameData.newdir = getche();
+		snakeGameData.newdir = getche();
 
 		// 计算下一步的位置
-		NextHead(&gameData);
+		NextHead();
 
 		// 判断游戏继续
-		if (gameData.pNewHead == NULL) {
+		if (snakeGameData.pNewHead == NULL) {
 			// 没有下一个蛇头
 			// 说明蛇头超过边界
 			// 游戏结束
-			gameData.gameContinue = 0;
+			snakeGameData.gameContinue = 0;
 		}
 		else {
 			// 如果碰到了自己
 			// 游戏结束
-			Snake *temp = gameData.pHead;
+			Snake *temp = snakeGameData.pHead;
 			while (temp != NULL) {
-				if (temp->loc == gameData.pNewHead->loc) {
-					gameData.gameContinue = 0;
+				if (temp->loc == snakeGameData.pNewHead->loc) {
+					snakeGameData.gameContinue = 0;
 					break;
 				}
 				temp = temp->next;
@@ -94,26 +57,26 @@ void SnakeGame() {
 		}
 
 		// 如果游戏继续，则刷新贪吃蛇和画面
-		if (gameData.gameContinue) {
+		if (snakeGameData.gameContinue) {
 			// 更新蛇头和食物位置
-			SnakeWalk(&gameData);
+			SnakeWalk();
 		}
 		else {
 			break;
 		}
 		// 刷新显示
 		system("cls");
-		PrintScreen(&gameData);
+		PrintScreen();
 	}
 }
 
 /*----------------------------
 	名称：InitSnake
-	参数：GameData指针
+	参数：无
 	返回：无
 	功能：初始化贪吃蛇游戏数据
 -----------------------------*/
-void InitSnake(struct GameData * pGameData) {
+void InitSnake() {
 	// 初始化蛇头
 	Snake *pHead = NULL;
 	Snake *temp = NULL;
@@ -124,17 +87,21 @@ void InitSnake(struct GameData * pGameData) {
 		pHead->loc = &screen[0][i];
 		pHead->next = temp;
 	}
-	pGameData->pHead = pHead;
+	snakeGameData.pHead = pHead;
+	snakeGameData.pNewHead = NULL;
 
 	// 产生第一个食物
-	pGameData->food = GenFood();
+	GenFood();
 
 	// 初始化游戏数据
-	pGameData->headX = 0;
-	pGameData->headY = INITLEN - 1;
-	pGameData->dir = RIGHT;
-	pGameData->backdir = LEFT;
-	pGameData->gameContinue = 1;
+	snakeGameData.headX = 0;
+	snakeGameData.headY = INITLEN - 1;
+	snakeGameData.dir = RIGHT;
+	snakeGameData.backdir = LEFT;
+	snakeGameData.newdir = snakeGameData.dir;
+
+	// 设置游戏开始标志
+	snakeGameData.gameContinue = 1;
 }
 
 /*----------------------------
@@ -153,83 +120,81 @@ void InitScreen(){
 
 /*----------------------------
 	名称：NextHead
-	参数：GameData指针
+	参数：无
 	返回：无
 	功能：判断下一次蛇头的运动方向
 -----------------------------*/
-void NextHead(struct GameData* pGameData) {
+void NextHead() {
 
 	int pendingX;					// 新的坐标
 	int pendingY;
 
-	if ((pGameData->newdir != UP) && 
-		(pGameData->newdir != DOWN) && 
-		(pGameData->newdir != LEFT) && 
-		(pGameData->newdir != RIGHT)) {
+	if ((snakeGameData.newdir != UP) && 
+		(snakeGameData.newdir != DOWN) && 
+		(snakeGameData.newdir != LEFT) && 
+		(snakeGameData.newdir != RIGHT)) {
 		// 如果不在这几条指令内
-		pGameData->newdir = pGameData->dir;
+		snakeGameData.newdir = snakeGameData.dir;
 	}
 
-	if (pGameData->newdir == pGameData->backdir) {
+	if (snakeGameData.newdir == snakeGameData.backdir) {
 		// 后退当作前进处理
-		pGameData->newdir = pGameData->dir;
+		snakeGameData.newdir = snakeGameData.dir;
 	}
-	switch (pGameData->newdir) {
+	switch (snakeGameData.newdir) {
 	case UP:
-		pGameData->dir = UP;
-		pGameData->backdir = DOWN;
-		pendingX = pGameData->headX - 1;
-		pendingY = pGameData->headY;
+		snakeGameData.dir = UP;
+		snakeGameData.backdir = DOWN;
+		pendingX = snakeGameData.headX - 1;
+		pendingY = snakeGameData.headY;
 		break;
 	case DOWN:
-		pGameData->dir = DOWN;
-		pGameData->backdir = UP;
-		pendingX = pGameData->headX + 1;
-		pendingY = pGameData->headY;
+		snakeGameData.dir = DOWN;
+		snakeGameData.backdir = UP;
+		pendingX = snakeGameData.headX + 1;
+		pendingY = snakeGameData.headY;
 		break;
 	case LEFT:
-		pGameData->dir = LEFT;
-		pGameData->backdir = RIGHT;
-		pendingX = pGameData->headX;
-		pendingY = pGameData->headY - 1;
+		snakeGameData.dir = LEFT;
+		snakeGameData.backdir = RIGHT;
+		pendingX = snakeGameData.headX;
+		pendingY = snakeGameData.headY - 1;
 		break;
 	case RIGHT:
-		pGameData->dir = RIGHT;
-		pGameData->backdir = LEFT;
-		pendingX = pGameData->headX;
-		pendingY = pGameData->headY + 1;
+		snakeGameData.dir = RIGHT;
+		snakeGameData.backdir = LEFT;
+		pendingX = snakeGameData.headX;
+		pendingY = snakeGameData.headY + 1;
 		break;
 	}
 	if ((pendingX < 0) || (pendingX >= LEN) || (pendingY < 0) || (pendingY >= LEN)) {
-		pGameData->pNewHead = NULL;
+		snakeGameData.pNewHead = NULL;
 	}
 	else {
-		pGameData->pNewHead = (Snake *)malloc(1);
-		pGameData->pNewHead->loc = &screen[pendingX][pendingY];
-		pGameData->headX = pendingX;
-		pGameData->headY = pendingY;
+		snakeGameData.pNewHead = (Snake *)malloc(1);
+		snakeGameData.pNewHead->loc = &screen[pendingX][pendingY];
+		snakeGameData.headX = pendingX;
+		snakeGameData.headY = pendingY;
 	}
 }
 
-
-
 /*----------------------------
 	名称：PrintScreen
-	参数：GameData指针
+	参数：无
 	返回：无
 	功能：将贪吃蛇在屏幕中打印出来
 -----------------------------*/
-void PrintScreen(struct GameData * pGameData) {
+void PrintScreen() {
 
 	// 将贪吃蛇信息输出给屏幕
-	Snake *temp = pGameData->pHead;
+	Snake *temp = snakeGameData.pHead;
 	while (temp != NULL) {
 		*(temp->loc) = SNAKE;
 		temp = temp->next;
 	}
 
 	// 将食物信息给屏幕
-	*(pGameData->food.loc) = FOOD;
+	*(snakeGameData.food.loc) = FOOD;
 
 	// 打印屏幕
 	for (int i = 0; i < LEN; i++) {
@@ -247,34 +212,31 @@ void PrintScreen(struct GameData * pGameData) {
 	返回：食物struct
 	功能：产生食物
 -----------------------------*/
-Food GenFood() {
-	Food food;
-	food.X = rand() % LEN;
-	food.Y = rand() % LEN;
-	food.loc = &screen[food.X][food.Y];
-	return food;
+void GenFood() {
+	snakeGameData.food.X = rand() % LEN;
+	snakeGameData.food.Y = rand() % LEN;
+	snakeGameData.food.loc = &screen[snakeGameData.food.X][snakeGameData.food.Y];
 }
-
 
 /*----------------------------
 	名称：SnakeWalk
-	参数：GameData指针
+	参数：无
 	返回：无
 	功能：贪吃蛇身体更新
 -----------------------------*/
-void SnakeWalk(struct GameData * pGameData) {
+void SnakeWalk() {
 
 	// 蛇头更新
-	pGameData->pNewHead->next = pGameData->pHead;
-	pGameData->pHead = pGameData->pNewHead;
+	snakeGameData.pNewHead->next = snakeGameData.pHead;
+	snakeGameData.pHead = snakeGameData.pNewHead;
 
 	// 如果走到食物的位置，要产生新的食物
 	// 否则要把尾巴删掉
-	if (pGameData->pHead->loc == pGameData->food.loc) {
-		pGameData->food = GenFood();
+	if (snakeGameData.pHead->loc == snakeGameData.food.loc) {
+		GenFood();
 	}
 	else {
-		Snake *temp = pGameData->pHead;
+		Snake *temp = snakeGameData.pHead;
 		while (temp->next != NULL) {
 			// 如果temp没有下一个,说明为蛇的尾巴
 			// 把尾巴的图形清空，释放尾巴的指针
