@@ -18,46 +18,36 @@
 #define LEFT	'a'
 #define RIGHT	'd'
 
-// 函数定义
-void InitScreen();
-void SnakeGame();
 
-void InitSnake();
-void NextHead();
-void PrintScreen();
-void SnakeWalk();
-void GenFood();
-
-// 全局变量定义
-char screen[LEN][LEN];
+// 定义位置类
+typedef struct Location {
+	int X;
+	int Y;
+}Location;
 
 // 定义蛇类
-typedef struct SnakeBody {
-	char *loc;						// 所在位置
-	struct SnakeBody * next;		// 下一个身体位置
+typedef struct Snake {
+	Location * location;			// 所在位置的指针
+	struct Snake * next;			// 下一个身体位置
 }Snake;
-
-// 定义食物类
-typedef struct FoodData {
-	int X;							// XY坐标
-	int Y;
-	char *loc;
-}Food;
 
 // 游戏数据类
 struct SnakeGameData {
 
+	Location locations[LEN*LEN];	// 全局位置
+
 	Snake * pHead;					// 蛇头指针		
 	Snake * pNewHead;				// 新的蛇头指针
-	Food food;						// 食物数据
 
-	int headX;						// 蛇头XY坐标
-	int headY;
+	Location * food;				// 食物位置指针
+
 	char dir;						// 蛇头方向
 	char backdir;
 	char newdir;
+		
+	int refreshFlag;				// 屏幕刷新标志位
 
 	unsigned int gameContinue;		// 游戏继续标志
 
-}snakeGameData;				
+};				
 

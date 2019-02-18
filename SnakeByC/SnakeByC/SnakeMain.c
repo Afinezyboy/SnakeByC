@@ -2,16 +2,30 @@
 #include "Snake.h"
 #include <windows.h>
 #include <stdlib.h>
+#include<conio.h>
 
+// 函数定义
+void InitScreen();
+void SnakeGame();
+
+void InitSnakeGame();
+void NextHead();
+void PrintScreen();
+void SnakeWalk();
+void GenFood();
+
+// 全局变量定义
+char screen[LEN][LEN];							// 屏幕数据
+struct SnakeGameData snakeGameData;				// 游戏数据
 
 void main(void) {
 
 	SnakeGame();
-	
+
 }
 
 /*----------------------------
-	名称：SnakeGame()
+	名称：SnakeGame
 	参数：无
 	返回：无
 	功能：贪吃蛇游戏入口
@@ -19,19 +33,27 @@ void main(void) {
 void SnakeGame() {
 
 	// 初始化贪吃蛇
-	InitSnake();
+	InitSnakeGame();
 
 	// 初始化屏幕
 	InitScreen();
 
-	// 打印屏幕
-	PrintScreen();
-
 	// 游戏正式开始
 	while (snakeGameData.gameContinue) {
 
-		// 更新方向
-		snakeGameData.newdir = getche();
+		// 刷新显示
+		system("cls");
+		PrintScreen();
+
+		// 延时300ms
+		Sleep(300);
+
+		if (_kbhit()) {
+			snakeGameData.newdir = _getch();
+		}
+		else {
+			snakeGameData.newdir = snakeGameData.dir;
+		}
 
 		// 计算下一步的位置
 		NextHead();
@@ -48,7 +70,7 @@ void SnakeGame() {
 			// 游戏结束
 			Snake *temp = snakeGameData.pHead;
 			while (temp != NULL) {
-				if (temp->loc == snakeGameData.pNewHead->loc) {
+				if (temp->location == snakeGameData.pNewHead->location) {
 					snakeGameData.gameContinue = 0;
 					break;
 				}
@@ -61,30 +83,34 @@ void SnakeGame() {
 			// 更新蛇头和食物位置
 			SnakeWalk();
 		}
-		else {
-			break;
-		}
-		// 刷新显示
-		system("cls");
-		PrintScreen();
 	}
 }
 
 /*----------------------------
-	名称：InitSnake
+	名称：InitSnakeGame
 	参数：无
 	返回：无
 	功能：初始化贪吃蛇游戏数据
 -----------------------------*/
-void InitSnake() {
+void InitSnakeGame() {
+	// 初始化所有数据
+	int index;
+	for (int i = 0; i < LEN; i++) {
+		for (int j = 0; j < LEN; j++) {
+			index = i * LEN + j;
+			snakeGameData.locations[index].X = i;
+			snakeGameData.locations[index].Y = j;
+		}
+	}
+
 	// 初始化蛇头
 	Snake *pHead = NULL;
 	Snake *temp = NULL;
 	// 尾巴
-	for (int i = 0; i < INITLEN; i++) {
+	for (int j = 0; j < INITLEN; j++) {
 		temp = pHead;
 		pHead = (Snake*)malloc(1);
-		pHead->loc = &screen[0][i];
+		pHead->location = &(snakeGameData.locations[0*LEN+j]);
 		pHead->next = temp;
 	}
 	snakeGameData.pHead = pHead;
@@ -94,8 +120,6 @@ void InitSnake() {
 	GenFood();
 
 	// 初始化游戏数据
-	snakeGameData.headX = 0;
-	snakeGameData.headY = INITLEN - 1;
 	snakeGameData.dir = RIGHT;
 	snakeGameData.backdir = LEFT;
 	snakeGameData.newdir = snakeGameData.dir;
@@ -145,26 +169,26 @@ void NextHead() {
 	case UP:
 		snakeGameData.dir = UP;
 		snakeGameData.backdir = DOWN;
-		pendingX = snakeGameData.headX - 1;
-		pendingY = snakeGameData.headY;
+		pendingX = snakeGameData.pHead->location->X - 1;
+		pendingY = snakeGameData.pHead->location->Y;
 		break;
 	case DOWN:
 		snakeGameData.dir = DOWN;
 		snakeGameData.backdir = UP;
-		pendingX = snakeGameData.headX + 1;
-		pendingY = snakeGameData.headY;
+		pendingX = snakeGameData.pHead->location->X + 1;
+		pendingY = snakeGameData.pHead->location->Y;
 		break;
 	case LEFT:
 		snakeGameData.dir = LEFT;
 		snakeGameData.backdir = RIGHT;
-		pendingX = snakeGameData.headX;
-		pendingY = snakeGameData.headY - 1;
+		pendingX = snakeGameData.pHead->location->X;
+		pendingY = snakeGameData.pHead->location->Y - 1;
 		break;
 	case RIGHT:
 		snakeGameData.dir = RIGHT;
 		snakeGameData.backdir = LEFT;
-		pendingX = snakeGameData.headX;
-		pendingY = snakeGameData.headY + 1;
+		pendingX = snakeGameData.pHead->location->X;
+		pendingY = snakeGameData.pHead->location->Y + 1;
 		break;
 	}
 	if ((pendingX < 0) || (pendingX >= LEN) || (pendingY < 0) || (pendingY >= LEN)) {
@@ -172,9 +196,7 @@ void NextHead() {
 	}
 	else {
 		snakeGameData.pNewHead = (Snake *)malloc(1);
-		snakeGameData.pNewHead->loc = &screen[pendingX][pendingY];
-		snakeGameData.headX = pendingX;
-		snakeGameData.headY = pendingY;
+		snakeGameData.pNewHead->location = &snakeGameData.locations[pendingX*LEN + pendingY];
 	}
 }
 
@@ -186,15 +208,22 @@ void NextHead() {
 -----------------------------*/
 void PrintScreen() {
 
+	int x, y;
+	InitScreen();
+
 	// 将贪吃蛇信息输出给屏幕
 	Snake *temp = snakeGameData.pHead;
 	while (temp != NULL) {
-		*(temp->loc) = SNAKE;
+		x = temp->location->X;
+		y = temp->location->Y;
+		screen[x][y] = SNAKE;
 		temp = temp->next;
 	}
 
 	// 将食物信息给屏幕
-	*(snakeGameData.food.loc) = FOOD;
+	x = snakeGameData.food->X;
+	y = snakeGameData.food->Y;
+	screen[x][y] = FOOD;
 
 	// 打印屏幕
 	for (int i = 0; i < LEN; i++) {
@@ -209,13 +238,14 @@ void PrintScreen() {
 /*----------------------------
 	名称：GenFood
 	参数：无
-	返回：食物struct
+	返回：无
 	功能：产生食物
 -----------------------------*/
 void GenFood() {
-	snakeGameData.food.X = rand() % LEN;
-	snakeGameData.food.Y = rand() % LEN;
-	snakeGameData.food.loc = &screen[snakeGameData.food.X][snakeGameData.food.Y];
+	int x, y;
+	x = rand() % LEN;
+	y = rand() % LEN;
+	snakeGameData.food = &snakeGameData.locations[x*LEN + y];
 }
 
 /*----------------------------
@@ -232,7 +262,7 @@ void SnakeWalk() {
 
 	// 如果走到食物的位置，要产生新的食物
 	// 否则要把尾巴删掉
-	if (snakeGameData.pHead->loc == snakeGameData.food.loc) {
+	if (snakeGameData.pHead->location == snakeGameData.food) {
 		GenFood();
 	}
 	else {
@@ -241,7 +271,7 @@ void SnakeWalk() {
 			// 如果temp没有下一个,说明为蛇的尾巴
 			// 把尾巴的图形清空，释放尾巴的指针
 			if (temp->next->next == NULL) {
-				*(temp->next->loc) = BLANK;
+				// *(temp->next->loc) = BLANK;
 				temp->next = NULL;
 			}
 			else {
